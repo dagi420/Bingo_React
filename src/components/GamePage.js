@@ -11,7 +11,6 @@ const GamePage = () => {
     const [calledNumbers, setCalledNumbers] = useState([]);
     const [timer, setTimer] = useState(null);
     const [currentCall, setCurrentCall] = useState('');
-    const [bingo, setBingo] = useState(false);
     const [darkMode, setDarkMode] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -32,7 +31,6 @@ const GamePage = () => {
         const generatedCard = generateBingoCard(number);
         setBingoCard(generatedCard);
         setMarkedNumbers([]);
-        setBingo(false);
         setIsCardSelected(false);
     };
 
@@ -62,7 +60,6 @@ const GamePage = () => {
         const diag2 = bingoCard.every((row, i) => markedNumbers.includes(row[4 - i]));
 
         if (rows || cols || diag1 || diag2) {
-            setBingo(true);
             alert('Bingo! You win!');
         } else {
             alert('Not Bingo yet! Keep going!');
