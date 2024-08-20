@@ -14,7 +14,7 @@ const GamePage = () => {
     const [darkMode, setDarkMode] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
 
-    // Handle switching between pages for card selection
+       // Handle switching between pages for card selection
     const handleNextPage = () => {
         setCurrentPage((prevPage) => (prevPage === 2 ? 1 : prevPage + 1));
     };
@@ -25,7 +25,7 @@ const GamePage = () => {
 
     const numbersToDisplay = currentPage === 1 ? Array.from({ length: 100 }, (_, i) => i + 1) : Array.from({ length: 100 }, (_, i) => i + 101);
 
-    // Handle selecting a number from the grid
+      // Handle selecting a number from the grid
     const handleNumberClick = (number) => {
         setSelectedNumber(number);
         const generatedCard = generateBingoCard(number);
@@ -44,7 +44,7 @@ const GamePage = () => {
         }
     };
 
-    // Toggle marking a number on the card
+     // Toggle marking a number on the card
     const toggleMarkNumber = (rowIndex, cellIndex) => {
         const number = bingoCard[rowIndex][cellIndex];
         setMarkedNumbers(prev =>
@@ -52,7 +52,7 @@ const GamePage = () => {
         );
     };
 
-    // Check if the player has won Bingo
+     // Check if the player has won Bingo
     const checkBingo = () => {
         const rows = bingoCard.some(row => row.every(number => markedNumbers.includes(number)));
         const cols = bingoCard[0].some((_, i) => bingoCard.every(row => markedNumbers.includes(row[i])));
@@ -65,61 +65,56 @@ const GamePage = () => {
             alert('Not Bingo yet! Keep going!');
         }
     };
-
-    // Start the timer to call out Bingo numbers
+ // Start the timer to call out Bingo numbers
     const startTimer = () => {
-        const calledNumbersSet = new Set(calledNumbers); // Use a Set to track called numbers
+        const calledNumbersSet = new Set(calledNumbers);// Use a Set to track called numbers
         const maxNumber = 75; // Maximum number in the Bingo card
-    
+
         const interval = setInterval(() => {
             let call;
             let number;
             let letter;
-    
-            // Generate a unique call
-            do {
+ // Generate a unique call
+             do {
                 letter = BINGO_LETTERS[Math.floor(Math.random() * BINGO_LETTERS.length)];
                 
                 switch (letter) {
                     case 'B':
-                        number = Math.floor(Math.random() * 15) + 1; // 1-15
+                        number = Math.floor(Math.random() * 15) + 1;
                         break;
                     case 'I':
-                        number = Math.floor(Math.random() * 15) + 16; // 16-30
+                        number = Math.floor(Math.random() * 15) + 16;
                         break;
                     case 'N':
-                        number = Math.floor(Math.random() * 15) + 31; // 31-45
+                        number = Math.floor(Math.random() * 15) + 31;
                         break;
                     case 'G':
-                        number = Math.floor(Math.random() * 15) + 46; // 46-60
+                        number = Math.floor(Math.random() * 15) + 46;
                         break;
                     case 'O':
-                        number = Math.floor(Math.random() * 15) + 61; // 61-75
+                        number = Math.floor(Math.random() * 15) + 61;
                         break;
                     default:
                         number = Math.floor(Math.random() * maxNumber) + 1;
                 }
-    
+
                 call = `${letter}${number}`;
             } while (calledNumbersSet.has(call) && calledNumbersSet.size < maxNumber); // Ensure it's unique and within range
-    
+
             setCurrentCall(call);
             setCalledNumbers(prev => [...prev, call]);
-            calledNumbersSet.add(call); // Update the Set with the new call
-        }, 5000); // 5-second intervals
-    
+            calledNumbersSet.add(call);// Update the Set with the new call
+        }, 5000);// 5-second intervals
+
         setTimer(interval);
     };
-    
-
-    // Cleanup timer on component unmount
+// Cleanup timer on component unmount
     useEffect(() => {
         return () => {
             clearInterval(timer);
         };
     }, [timer]);
-
-    // Toggle dark mode
+ // Toggle dark mode
     const toggleDarkMode = () => {
         setDarkMode(!darkMode);
         document.body.classList.toggle('dark-mode');
@@ -127,7 +122,7 @@ const GamePage = () => {
 
     return (
         <div>
-            {/* Dark mode toggle */}
+             {/* Dark mode toggle */}
             <button onClick={toggleDarkMode}>
                 {darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             </button>
@@ -151,7 +146,7 @@ const GamePage = () => {
                     </div>
                     {selectedNumber && (
                         <>
-                            {/* Display the Bingo card when a number is selected */}
+                        {/* Display the Bingo card when a number is selected */}
                             <div className="bingo-card-container">
                                 <h3>Your Bingo Card (Card #{selectedNumber})</h3>
                                 <div className="bingo-card">
@@ -224,11 +219,15 @@ const GamePage = () => {
     );
 };
 
-// Bingo card generation logic
+// Seeded random number generator
+const seededRandom = (seed) => {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+};
+
+// Bingo card generation logic with seeded randomness
 const generateBingoCard = (seed) => {
     const card = [];
-    const random = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-
     for (let i = 0; i < 5; i++) {
         const column = [];
         let min, max;
@@ -260,17 +259,22 @@ const generateBingoCard = (seed) => {
         }
 
         for (let j = 0; j < 5; j++) {
-            let num;
-            do {
-                num = random(min, max);
-            } while (column.includes(num));
-            column.push(num);
+            if (i === 2 && j === 2) {
+                column.push('★'); // Free space
+            } else {
+                let num;
+                do {
+                    seed++;
+                    num = Math.floor(seededRandom(seed) * (max - min + 1)) + min;
+                } while (column.includes(num));
+                column.push(num);
+            }
         }
         card.push(column);
     }
 
-    card[2][2] = '★'; // Middle cell as a star
-    return card[0].map((_, colIndex) => card.map(row => row[colIndex]));
+    // Transpose to get correct layout
+    return card[0].map((_, i) => card.map(row => row[i]));
 };
 
 export default GamePage;
