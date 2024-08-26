@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styles from './GamePage.module.css';
 const BINGO_LETTERS = ['B', 'I', 'N', 'G', 'O'];
 
 const GamePage = ({ bingoCard }) => {
     const [markedNumbers, setMarkedNumbers] = useState([bingoCard[2][2]]); // Automatically mark the center cell
     const [calledNumbers, setCalledNumbers] = useState([]);
-    const [timer, setTimer] = useState(null);
     const [currentCall, setCurrentCall] = useState('');
     const [countdown, setCountdown] = useState(5); // Countdown state
+    const timerRef = useRef(null); // Use useRef to store the interval ID
 
     // Toggle marking a number on the card
     const toggleMarkNumber = (rowIndex, cellIndex) => {
@@ -89,14 +89,14 @@ const GamePage = ({ bingoCard }) => {
                 setCountdown(5); // Reset countdown
             }, 5000);
 
-            setTimer(interval);
+            timerRef.current = interval;
         };
 
         startTimer();
         return () => {
-            clearInterval(timer);
+            clearInterval(timerRef.current);
         };
-    }, [calledNumbers, timer]);
+    }, [calledNumbers]);
 
     const getColorClass = (call) => {
         switch (call[0]) {

@@ -14,6 +14,7 @@ const GameDashboard = () => {
     const [gameStarted, setGameStarted] = useState(false);
     const [vantaEffect, setVantaEffect] = useState(null);
     const vantaRef = useRef(null);
+    const bingoCardRef = useRef(null);
 
     useEffect(() => {
         if (!vantaEffect) {
@@ -56,6 +57,11 @@ const GameDashboard = () => {
         setSelectedNumber(number);
         const generatedCard = generateBingoCard(number);
         setBingoCard(generatedCard);
+
+        // Scroll to the bingo card on mobile view
+        if (window.innerWidth <= 600) {
+            bingoCardRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
     };
 
     // Confirm card selection
@@ -151,7 +157,7 @@ const GameDashboard = () => {
                 ) : null}
             </div>
 
-            <div className="right-container">
+            <div className="right-container" ref={bingoCardRef}>
                 {selectedNumber && (
                     <div className="bingo-card-container">
                         <h3>Your Bingo Card (Card #{selectedNumber})</h3>
@@ -191,4 +197,4 @@ const GameDashboard = () => {
     );
 };
 
-export default GameDashboard;
+export default GameDashboard;   
