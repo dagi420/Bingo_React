@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './GamePage.module.css';
 const BINGO_LETTERS = ['B', 'I', 'N', 'G', 'O'];
 
@@ -37,43 +37,6 @@ const GamePage = ({ bingoCard }) => {
         }
     };
 
-    // Start the timer to call out Bingo numbers
-    const startTimer = useCallback(() => {
-        const calledNumbersSet = new Set(calledNumbers);
-
-        const interval = setInterval(() => {
-            if (calledNumbersSet.size >= 75) {
-                clearInterval(interval);
-                return;
-            }
-
-            let call;
-            let number;
-            let letter;
-            // Generate a unique call
-            do {
-                letter = BINGO_LETTERS[Math.floor(Math.random() * BINGO_LETTERS.length)];
-                
-                switch (letter) {
-                    case 'B': number = Math.floor(Math.random() * 15) + 1; break;
-                    case 'I': number = Math.floor(Math.random() * 15) + 16; break;
-                    case 'N': number = Math.floor(Math.random() * 15) + 31; break;
-                    case 'G': number = Math.floor(Math.random() * 15) + 46; break;
-                    case 'O': number = Math.floor(Math.random() * 15) + 61; break;
-                    default: number = Math.floor(Math.random() * 75) + 1;
-                }
-
-                call = `${letter}${number}`;
-            } while (calledNumbersSet.has(call));
-
-            calledNumbersSet.add(call);
-            setCurrentCall(call);
-            setCountdown(5); // Reset countdown
-        }, 5000);
-
-        setTimer(interval);
-    }, [calledNumbers]);
-
     // Update calledNumbers when currentCall changes
     useEffect(() => {
         if (currentCall) {
@@ -93,11 +56,47 @@ const GamePage = ({ bingoCard }) => {
 
     // Cleanup timer on component unmount
     useEffect(() => {
+        const startTimer = () => {
+            const calledNumbersSet = new Set(calledNumbers);
+
+            const interval = setInterval(() => {
+                if (calledNumbersSet.size >= 75) {
+                    clearInterval(interval);
+                    return;
+                }
+
+                let call;
+                let number;
+                let letter;
+                // Generate a unique call
+                do {
+                    letter = BINGO_LETTERS[Math.floor(Math.random() * BINGO_LETTERS.length)];
+                    
+                    switch (letter) {
+                        case 'B': number = Math.floor(Math.random() * 15) + 1; break;
+                        case 'I': number = Math.floor(Math.random() * 15) + 16; break;
+                        case 'N': number = Math.floor(Math.random() * 15) + 31; break;
+                        case 'G': number = Math.floor(Math.random() * 15) + 46; break;
+                        case 'O': number = Math.floor(Math.random() * 15) + 61; break;
+                        default: number = Math.floor(Math.random() * 75) + 1;
+                    }
+
+                    call = `${letter}${number}`;
+                } while (calledNumbersSet.has(call));
+
+                calledNumbersSet.add(call);
+                setCurrentCall(call);
+                setCountdown(5); // Reset countdown
+            }, 5000);
+
+            setTimer(interval);
+        };
+
         startTimer();
         return () => {
             clearInterval(timer);
         };
-    }, [startTimer, timer]);
+    }, [calledNumbers, timer]);
 
     const getColorClass = (call) => {
         switch (call[0]) {
