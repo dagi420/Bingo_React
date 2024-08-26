@@ -1,12 +1,17 @@
 import React from 'react';
-import GamePage from './components/GamePage'; // Correct import path
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import GameDashboard from './components/GameDashboard';
+import GamePage from './components/GamePage'; // Replace with actual component names
 
-function App() {
+const App = () => {
   return (
-    <div className="App">
-      <GamePage />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<GameDashboard />} />
+        <Route path="/" element={<GamePage />} />
+      </Routes>
+    </Router>
   );
-}
+};
 
 export default App;

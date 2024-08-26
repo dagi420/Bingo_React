@@ -1,50 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import './GamePage.css';
-
+import styles from './GamePage.module.css';
 const BINGO_LETTERS = ['B', 'I', 'N', 'G', 'O'];
 
-const GamePage = () => {
-    const [selectedNumber, setSelectedNumber] = useState(null);
-    const [bingoCard, setBingoCard] = useState(null);
-    const [markedNumbers, setMarkedNumbers] = useState([]);
-    const [isCardSelected, setIsCardSelected] = useState(false);
+const GamePage = ({ bingoCard }) => {
+    const [markedNumbers, setMarkedNumbers] = useState([bingoCard[2][2]]); // Automatically mark the center cell
     const [calledNumbers, setCalledNumbers] = useState([]);
     const [timer, setTimer] = useState(null);
     const [currentCall, setCurrentCall] = useState('');
-    const [darkMode, setDarkMode] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
+    const [countdown, setCountdown] = useState(5); // Countdown state
 
-       // Handle switching between pages for card selection
-    const handleNextPage = () => {
-        setCurrentPage((prevPage) => (prevPage === 2 ? 1 : prevPage + 1));
-    };
-
-    const handlePrevPage = () => {
-        setCurrentPage((prevPage) => (prevPage === 1 ? 2 : prevPage - 1));
-    };
-
-    const numbersToDisplay = currentPage === 1 ? Array.from({ length: 100 }, (_, i) => i + 1) : Array.from({ length: 100 }, (_, i) => i + 101);
-
-      // Handle selecting a number from the grid
-    const handleNumberClick = (number) => {
-        setSelectedNumber(number);
-        const generatedCard = generateBingoCard(number);
-        setBingoCard(generatedCard);
-        setMarkedNumbers([]);
-        setIsCardSelected(false);
-    };
-
-    // Handle confirming the card selection
-    const handleCardSelect = () => {
-        if (selectedNumber) {
-            setIsCardSelected(true);
-            startTimer();
-        } else {
-            alert('Please select a number from the grid first!');
-        }
-    };
-
-     // Toggle marking a number on the card
+    // Toggle marking a number on the card
     const toggleMarkNumber = (rowIndex, cellIndex) => {
         const number = bingoCard[rowIndex][cellIndex];
         setMarkedNumbers(prev =>
@@ -52,8 +17,14 @@ const GamePage = () => {
         );
     };
 
-     // Check if the player has won Bingo
+    // Check if the player has won Bingo
     const checkBingo = () => {
+        const isSubset = markedNumbers.every(number => calledNumbers.includes(number));
+        if (!isSubset) {
+            alert('Not Bingo yet! Keep going!');
+            return;
+        }
+
         const rows = bingoCard.some(row => row.every(number => markedNumbers.includes(number)));
         const cols = bingoCard[0].some((_, i) => bingoCard.every(row => markedNumbers.includes(row[i])));
         const diag1 = bingoCard.every((row, i) => markedNumbers.includes(row[i]));
@@ -65,216 +36,133 @@ const GamePage = () => {
             alert('Not Bingo yet! Keep going!');
         }
     };
- // Start the timer to call out Bingo numbers
+
+    // Start the timer to call out Bingo numbers
     const startTimer = () => {
-        const calledNumbersSet = new Set(calledNumbers);// Use a Set to track called numbers
-        const maxNumber = 75; // Maximum number in the Bingo card
+        const calledNumbersSet = new Set(calledNumbers);
 
         const interval = setInterval(() => {
+            if (calledNumbersSet.size >= 75) {
+                clearInterval(interval);
+                return;
+            }
+
             let call;
             let number;
             let letter;
- // Generate a unique call
-             do {
+            // Generate a unique call
+            do {
                 letter = BINGO_LETTERS[Math.floor(Math.random() * BINGO_LETTERS.length)];
                 
                 switch (letter) {
-                    case 'B':
-                        number = Math.floor(Math.random() * 15) + 1;
-                        break;
-                    case 'I':
-                        number = Math.floor(Math.random() * 15) + 16;
-                        break;
-                    case 'N':
-                        number = Math.floor(Math.random() * 15) + 31;
-                        break;
-                    case 'G':
-                        number = Math.floor(Math.random() * 15) + 46;
-                        break;
-                    case 'O':
-                        number = Math.floor(Math.random() * 15) + 61;
-                        break;
-                    default:
-                        number = Math.floor(Math.random() * maxNumber) + 1;
+                    case 'B': number = Math.floor(Math.random() * 15) + 1; break;
+                    case 'I': number = Math.floor(Math.random() * 15) + 16; break;
+                    case 'N': number = Math.floor(Math.random() * 15) + 31; break;
+                    case 'G': number = Math.floor(Math.random() * 15) + 46; break;
+                    case 'O': number = Math.floor(Math.random() * 15) + 61; break;
+                    default: number = Math.floor(Math.random() * 75) + 1;
                 }
 
                 call = `${letter}${number}`;
-            } while (calledNumbersSet.has(call) && calledNumbersSet.size < maxNumber); // Ensure it's unique and within range
+            } while (calledNumbersSet.has(call));
 
+            calledNumbersSet.add(call);
             setCurrentCall(call);
-            setCalledNumbers(prev => [...prev, call]);
-            calledNumbersSet.add(call);// Update the Set with the new call
-        }, 5000);// 5-second intervals
+            setCountdown(5); // Reset countdown
+        }, 5000);
 
         setTimer(interval);
     };
-// Cleanup timer on component unmount
+
+    // Update calledNumbers when currentCall changes
     useEffect(() => {
+        if (currentCall) {
+            setCalledNumbers(prev => [...prev, currentCall]);
+        }
+    }, [currentCall]);
+
+    // Countdown effect
+    useEffect(() => {
+        if (countdown > 0) {
+            const countdownInterval = setInterval(() => {
+                setCountdown(prev => prev - 1);
+            }, 1000);
+            return () => clearInterval(countdownInterval);
+        }
+    }, [countdown]);
+
+    // Cleanup timer on component unmount
+    useEffect(() => {
+        startTimer();
         return () => {
             clearInterval(timer);
         };
-    }, [timer]);
- // Toggle dark mode
-    const toggleDarkMode = () => {
-        setDarkMode(!darkMode);
-        document.body.classList.toggle('dark-mode');
+    }, []);
+
+    const getColorClass = (call) => {
+        switch (call[0]) {
+            case 'B': return styles.red;
+            case 'I': return styles.yellow;
+            case 'N': return styles.blue;
+            case 'G': return styles.orange;
+            case 'O': return styles.green;
+            default: return '';
+        }
     };
 
     return (
-        <div>
-             {/* Dark mode toggle */}
-            <button onClick={toggleDarkMode}>
-                {darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            </button>
-            {!isCardSelected ? (
-                <div className="container">
-                    <h2>Select a Number to Get Your Bingo Card</h2>
-                    <div className="number-grid">
-                        {numbersToDisplay.map(number => (
-                            <div
-                                key={number}
-                                className={`number-grid-item ${selectedNumber === number ? 'selected' : ''}`}
-                                onClick={() => handleNumberClick(number)}
-                            >
-                                {number}
-                            </div>
-                        ))}
-                    </div>
-                    <div className="pagination-buttons">
-                        <button onClick={handlePrevPage} disabled={currentPage === 1}>Previous</button>
-                        <button onClick={handleNextPage} disabled={currentPage === 2}>Next</button>
-                    </div>
-                    {selectedNumber && (
-                        <>
-                        {/* Display the Bingo card when a number is selected */}
-                            <div className="bingo-card-container">
-                                <h3>Your Bingo Card (Card #{selectedNumber})</h3>
-                                <div className="bingo-card">
-                                    <div className="bingo-header">
-                                        {BINGO_LETTERS.map((letter, index) => (
-                                            <div key={index} className="bingo-header-cell">{letter}</div>
-                                        ))}
-                                    </div>
-                                    <div className="bingo-body">
-                                        {bingoCard && bingoCard.map((row, rowIndex) => (
-                                            <div key={rowIndex} className="bingo-row">
-                                                {row.map((cell, cellIndex) => (
-                                                    <div
-                                                        key={cellIndex}
-                                                        className={`bingo-cell ${markedNumbers.includes(cell) ? 'marked' : ''}`}
-                                                        onClick={() => toggleMarkNumber(rowIndex, cellIndex)}
-                                                    >
-                                                        {cell === '★' ? '★' : cell}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                            <button onClick={handleCardSelect} className="select-card-button">
-                                Start Game
-                            </button>
-                        </>
-                    )}
+        <div className={styles.container}>
+            <div className={styles.calledNumbersContainer}>
+                <h3>Called Numbers</h3>
+                <div className={styles.calledNumbers}>
+                    {calledNumbers.length > 0 ? calledNumbers.slice(-5).map((call, index) => (
+                        <div key={index} className={`${styles.calledNumber} ${getColorClass(call)} ${styles.fadeIn}`}>
+                            {call}
+                        </div>
+                    )) : <div>No numbers called yet</div>}
                 </div>
-            ) : (
-                <div className="container">
-                    <h3>Game in progress</h3>
-                    <p>Current Call: {currentCall}</p>
-                    <div className="called-numbers">
-                        <h4>Called Numbers History:</h4>
-                        <div className="called-numbers-list">
-                            {calledNumbers.map((call, index) => (
-                                <span key={index} className="called-number">{call}</span>
-                            ))}
-                        </div>
+            </div>
+            <div className={styles.currentCall}>
+                <h3>Current Call</h3>
+                {currentCall ? (
+                    <div className={`${styles.calledNumber} ${getColorClass(currentCall)} ${styles.fadeIn}`}>
+                        {currentCall}
                     </div>
-                    <div className="bingo-card">
-                        <div className="bingo-header">
-                            {BINGO_LETTERS.map((letter, index) => (
-                                <div key={index} className="bingo-header-cell">{letter}</div>
-                            ))}
+                ) : (
+                    <div>No current call</div>
+                )}
+                <div className={styles.countdown}>
+                    Next call in: {countdown} seconds
+                </div>
+            </div>
+            <h2>Game Started</h2>
+            <div className={styles.bingoCard}>
+                <div className={styles.bingoHeader}>
+                    {BINGO_LETTERS.map((letter, index) => (
+                        <div key={index} className={`${styles.bingoHeaderCell} ${getColorClass(letter + '1')}`}>
+                            {letter}
                         </div>
-                        <div className="bingo-body">
-                            {bingoCard.map((row, rowIndex) => (
-                                <div key={rowIndex} className="bingo-row">
-                                    {row.map((cell, cellIndex) => (
-                                        <div
-                                            key={cellIndex}
-                                            className={`bingo-cell ${markedNumbers.includes(cell) ? 'marked' : ''}`}
-                                            onClick={() => toggleMarkNumber(rowIndex, cellIndex)}
-                                        >
-                                            {cell === '★' ? '★' : cell}
-                                        </div>
-                                    ))}
+                    ))}
+                </div>
+                <div className={styles.bingoBody}>
+                    {bingoCard.map((row, rowIndex) => (
+                        <div key={rowIndex} className={styles.bingoRow}>
+                            {row.map((cell, cellIndex) => (
+                                <div
+                                    key={cellIndex}
+                                    className={`${styles.bingoCell} ${markedNumbers.includes(cell) ? styles.marked : ''}`}
+                                    onClick={() => toggleMarkNumber(rowIndex, cellIndex)}
+                                >
+                                    {cell}
                                 </div>
                             ))}
                         </div>
-                    </div>
-                    <button onClick={checkBingo}>Check Bingo</button>
+                    ))}
                 </div>
-            )}
+            </div>
+            <button onClick={checkBingo} className={styles.checkBingoButton}>Check Bingo</button>
         </div>
     );
-};
-
-// Seeded random number generator
-const seededRandom = (seed) => {
-    const x = Math.sin(seed) * 10000;
-    return x - Math.floor(x);
-};
-
-// Bingo card generation logic with seeded randomness
-const generateBingoCard = (seed) => {
-    const card = [];
-    for (let i = 0; i < 5; i++) {
-        const column = [];
-        let min, max;
-
-        switch (i) {
-            case 0: // B
-                min = 1;
-                max = 15;
-                break;
-            case 1: // I
-                min = 16;
-                max = 30;
-                break;
-            case 2: // N
-                min = 31;
-                max = 45;
-                break;
-            case 3: // G
-                min = 46;
-                max = 60;
-                break;
-            case 4: // O
-                min = 61;
-                max = 75;
-                break;
-            default:
-                min = 1;
-                max = 75;
-        }
-
-        for (let j = 0; j < 5; j++) {
-            if (i === 2 && j === 2) {
-                column.push('★'); // Free space
-            } else {
-                let num;
-                do {
-                    seed++;
-                    num = Math.floor(seededRandom(seed) * (max - min + 1)) + min;
-                } while (column.includes(num));
-                column.push(num);
-            }
-        }
-        card.push(column);
-    }
-
-    // Transpose to get correct layout
-    return card[0].map((_, i) => card.map(row => row[i]));
 };
 
 export default GamePage;
