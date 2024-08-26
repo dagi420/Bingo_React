@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styles from './GamePage.module.css';
 const BINGO_LETTERS = ['B', 'I', 'N', 'G', 'O'];
 
@@ -38,7 +38,7 @@ const GamePage = ({ bingoCard }) => {
     };
 
     // Start the timer to call out Bingo numbers
-    const startTimer = () => {
+    const startTimer = useCallback(() => {
         const calledNumbersSet = new Set(calledNumbers);
 
         const interval = setInterval(() => {
@@ -72,7 +72,7 @@ const GamePage = ({ bingoCard }) => {
         }, 5000);
 
         setTimer(interval);
-    };
+    }, [calledNumbers]);
 
     // Update calledNumbers when currentCall changes
     useEffect(() => {
@@ -97,7 +97,7 @@ const GamePage = ({ bingoCard }) => {
         return () => {
             clearInterval(timer);
         };
-    }, []);
+    }, [startTimer, timer]);
 
     const getColorClass = (call) => {
         switch (call[0]) {
