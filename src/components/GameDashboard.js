@@ -27,12 +27,12 @@ const GameDashboard = () => {
                     gyroControls: false,
                     minHeight: 200.00,
                     minWidth: 200.00,
-                    highlightColor: 0xD81159,
-                    lowlightColor: 0xFFFFFF,
-                    baseColor: 0x6BF178,
-                    blurFactor: 0.90,
+                    highlightColor: 0xB5FFE9,
+                    lowlightColor: 0x8BE8CB,
+                    baseColor: 0x50B2C0,
+                    blurFactor: .90,
                     speed: 2.80,
-                    zoom: 0.40
+                    zoom: .88
                 })
             );
         }
