@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import FOG from 'vanta/dist/vanta.fog.min';
 import './GameStyles.css'; // Link to the CSS file
-import GamePage from './GamePage'; // Assuming GamePage is in the same directory
+import { useNavigate } from 'react-router-dom';
 import axios from '../api/axios';
 
 const BINGO_LETTERS = ['B', 'I', 'N', 'G', 'O'];
@@ -13,12 +13,12 @@ const GameDashboard = () => {
     const [availableGames, setAvailableGames] = useState([]);
     const [isCardSelected, setIsCardSelected] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [gameStarted, setGameStarted] = useState(false);
     const [vantaEffect, setVantaEffect] = useState(null);
     const [joiningGame, setJoiningGame] = useState(false); // Track game join status
     const [joinCountdown, setJoinCountdown] = useState(5); // Countdown state
     const vantaRef = useRef(null);
     const bingoCardRef = useRef(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (!vantaEffect) {
@@ -49,8 +49,8 @@ const GameDashboard = () => {
     useEffect(() => {
         const fetchAvailableGames = async () => {
             try {
-                 const token = localStorage.getItem('token'); // Adjust this line based on where your token is stored
-                 const response = await axios.get('/game/availableGames', {
+                const token = localStorage.getItem('token'); // Adjust this line based on where your token is stored
+                const response = await axios.get('/game/availableGames', {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
@@ -80,18 +80,18 @@ const GameDashboard = () => {
     const handleNumberClick = async (number) => {
         setSelectedNumber(number);
         try {
+            console.log(`Fetching card for number: ${number}`); // Debugging log
             // Dynamic fetching of the Bingo card using selected number
-            const response = await axios.get(`/game/cards/${number}`);
+            const token = localStorage.getItem('token'); // Retrieve token from localStorage
+            const response = await axios.get(`/game/cards/${number}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            console.log('Response:', response); // Debugging log
             const cardData = response.data.card;
             console.log("Card Data:", cardData); 
-            const generatedCard = [
-                [cardData.B1, cardData.B2, cardData.B3, cardData.B4, cardData.B5],
-                [cardData.I1, cardData.I2, cardData.I3, cardData.I4, cardData.I5],
-                [cardData.N1, cardData.N2, '★', cardData.N4, cardData.N5],
-                [cardData.G1, cardData.G2, cardData.G3, cardData.G4, cardData.G5],
-                [cardData.O1, cardData.O2, cardData.O3, cardData.O4, cardData.O5],
-            ];
-            setBingoCard(generatedCard);
+            setBingoCard(cardData);
 
             // Scroll to the bingo card on mobile view
             if (window.innerWidth <= 600) {
@@ -107,8 +107,14 @@ const GameDashboard = () => {
         if (selectedNumber) {
             try {
                 // Send selected card to the backend
-                await axios.post('/game/select-card', { cardId: selectedNumber });
+                const token = localStorage.getItem('token'); // Retrieve token from localStorage
+                await axios.post('/game/select-card', { cardId: selectedNumber }, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
                 setIsCardSelected(true);
+                navigate('/game', { state: { bingoCard } }); // Redirect to GamePage with bingoCard data
             } catch (error) {
                 console.error('Error selecting card:', error);
             }
@@ -117,25 +123,16 @@ const GameDashboard = () => {
         }
     };
 
-    // Start the game
-    const startGame = async () => {
-        if (isCardSelected) {
-            try {
-                await axios.post('/game/start');
-                setGameStarted(true);
-            } catch (error) {
-                console.error('Error starting game:', error);
-            }
-        } else {
-            alert('Please select a card first!');
-        }
-    };
-
     // Join a game
     const joinGame = async (gameId) => {
         try {
             setJoiningGame(true); // Set status to joining
-            await axios.post(`/game/join/${gameId}`);
+            const token = localStorage.getItem('token'); // Retrieve token from localStorage
+            await axios.post(`/game/join/${gameId}`, {}, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             alert('Joined the game successfully!');
             
             // Countdown logic before prompting for card selection
@@ -152,6 +149,7 @@ const GameDashboard = () => {
             console.error('Error joining game:', error);
         }
     };
+
     return (
         <div>
         {joiningGame ? (
@@ -216,11 +214,6 @@ const GameDashboard = () => {
                         <button onClick={handleCardSelect} className="select-card-button">
                             Confirm Card
                         </button>
-                        {isCardSelected && (
-                            <button onClick={startGame} className="start-game-button">
-                                Start Game
-                            </button>
-                        )}
                     </div>
                 )}
             </div>
